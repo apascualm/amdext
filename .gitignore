@@ -2,3 +2,5 @@ lib
 node_modules
 types
 pnr.json
+.idea
+.git
