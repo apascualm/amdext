@@ -10,7 +10,7 @@ export interface AipcHeader extends MainHeader{
 }
 
 export interface AmmHeader extends MainHeader {
-  doc: 'AMM'
+  doc: 'AMM' | 'MP'
 }
 
 export interface TsmHeader extends MainHeader {

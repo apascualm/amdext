@@ -12,11 +12,30 @@ export interface RefAMM {
   meth?:string // different method/technique for this configuration "confnbr"
 }
 
+export interface RefMP {
+  modelIdentCode: string
+  systemDiffCode:string
+  systemCode:string
+  subSystemCode:string
+  subSubSystemCode: string
+  assyCode:string
+  disassyCode:string
+  disassyCodeVariant:string
+  infoCode:string
+  infoCodeVariant:string
+  itemLocationCode:string
+}
+
+export interface SubTaskRefMP {
+  systemComplete: string
+  subTaskFunction:string
+}
+
 export interface SubTask {
-  effect: effectivityRange[]
-  rev: Date
-  ref: RefAMM
-  content: string
+  effect?: effectivityRange[]
+  rev?: Date
+  ref: RefAMM | RefMP | SubTaskRefMP
+  content?: string
   header: string
 }
 

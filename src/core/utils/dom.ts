@@ -32,7 +32,7 @@ export const clearText = (text:string) => {
 }
 
 export const findFirstElement = (options: { tagName: string, nodes: Node[], att?: AttributeFinder[], recursive?: boolean }) => {
-  return findOne(filter(options.tagName, options.att), options.nodes as AnyNode[], options.recursive);
+  return findOne(filter(options.tagName, options.att),  options.nodes as AnyNode[], options.recursive);
 }
 
 export const findElement = (options: { tagName: string, nodes: Node[], att?: AttributeFinder[], recursive?: boolean, limit?: number }) => {
