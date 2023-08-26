@@ -4,3 +4,7 @@ types
 pnr.json
 .idea
 .git
+.DS_Store
+raw
+!raw/.gitkeep
+dist
