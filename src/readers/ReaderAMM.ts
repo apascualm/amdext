@@ -68,7 +68,9 @@ function extractSubTasks(el: Element): SubTask[] {
 }
 
 function extractTask(el: Element): Task {
-    // TODO doc debe de venir de amm NODE
+    const operator = getAttribute({attName: 'cus', elem: el}, '???')
+    const fleet = getAttribute({attName: 'model', elem: el}, 'A000').match(/A\d{3}/i)![0] || 'A000'
+    el = findFirstElement({tagName: 'task', nodes: el.children}) as Element
     const task: Task = {
         ref: {
             chap: getAttribute({attName: 'chapnbr', elem: el}, '??'),
@@ -84,8 +86,8 @@ function extractTask(el: Element): Task {
         doc: {
             doc: "AMM",
             rev: convertRevDate(getAttribute({attName: 'revdate', elem: el}, '')),
-            op: 'IBE',
-            model: 'A330'
+            op: operator,
+            model: fleet
         },
         effect: extractEffectivity(el.children) || [],
         subTask: extractSubTasks(el),
@@ -134,7 +136,7 @@ export class ReaderAMM {
 
         onlyValid.map((file, idx) => {
             const read = new ReaderXML(path.resolve(this.xmlPath, file));
-            const taskNode = findFirstElement({tagName: 'task', nodes: read.document.children}) as Element
+            const taskNode = findFirstElement({tagName: 'amm', nodes: read.document.children}) as Element
             const task = extractTask(taskNode)
             result.push(task)
             if (idx == 120) {

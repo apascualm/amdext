@@ -72,7 +72,6 @@ function extractSubTasks(el: Element): SubTask[] {
 }
 
 function extractTask(el: Element): Task {
-    // TODO doc debe de venir de amm NODE
     const indentElement = findFirstElement({tagName: 'dmIdent', nodes: el.children, recursive: true}) as Element
     const taskRef = findFirstElement({tagName: 'dmCode', nodes: indentElement.children}) as Element
     const operator = getAttribute({
