@@ -33,7 +33,7 @@ export interface SubTaskRefMP {
 
 export interface SubTask {
   effect?: effectivityRange[]
-  rev?: Date
+  rev: Date
   ref: RefAMM | RefMP | SubTaskRefMP
   content?: string
   header: string
