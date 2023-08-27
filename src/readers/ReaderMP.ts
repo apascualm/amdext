@@ -212,7 +212,6 @@ export class ReaderMP implements IToCSV {
                     systemComplete: subTaskRef.systemComplete,
                     subTaskFunction: subTaskRef.subTaskFunction,
                     title: subTask.header,
-                    rev: subTask.rev,
                     type: 'MPSUBTASK'
                 }
                 table.push(tableSubItem)
