@@ -1,6 +1,6 @@
 import path from "path";
 import * as fs from "fs";
-import type {SubTask, Task} from "@src/core/data/Task";
+import type {RefMP, SubTask, SubTaskRefMP, Task} from "@src/core/data/Task";
 import {ReaderXML} from "@src/readers/ReaderXML";
 import type {Element} from "domhandler";
 import {globalNowZ} from "@src/core/utils/date";
@@ -8,12 +8,15 @@ import {convertRevDate} from "@src/core/convert/ConvertRevDate";
 import {extractText, findElement, findFirstElement, getAttribute} from "@src/core/utils/dom";
 import {extractEffectivity} from "@src/core/extracts/ExtractEffectivity";
 import * as console from "console";
+import type {IToCSV} from "@src/readers/IToCSV";
+import {stringify} from "csv-stringify/sync";
+import type {MPTask} from "@src/core/data/Tables/MPTask";
 
 function extractTitle(el: Element) {
     let titleNode = findFirstElement({tagName: 'title', nodes: el.children})
     if (!titleNode) {
         titleNode = findFirstElement({tagName: 'para', nodes: el.children})
-        if(!titleNode) return 'unknown'
+        if (!titleNode) return 'unknown'
     }
     return extractText({node: titleNode});
 }
@@ -46,7 +49,13 @@ function extractFIN(el: Element): string[] {
 
 function extractIssueDate(el: Element): Date {
     const issueDateEl = findFirstElement({tagName: 'issueDate', nodes: el.children, recursive: true}) as Element
-    return convertRevDate(getAttribute({attName: 'year', elem: issueDateEl}, '1700').concat(getAttribute({attName: 'month', elem: issueDateEl}, '01'), getAttribute({attName: 'day', elem: issueDateEl}, '01')))
+    return convertRevDate(getAttribute({
+        attName: 'year',
+        elem: issueDateEl
+    }, '1700').concat(getAttribute({attName: 'month', elem: issueDateEl}, '01'), getAttribute({
+        attName: 'day',
+        elem: issueDateEl
+    }, '01')))
 }
 
 function extractSubTasks(el: Element): SubTask[] {
@@ -65,6 +74,7 @@ function extractSubTasks(el: Element): SubTask[] {
                 systemComplete: idMatch ? idMatch[1] || '' : '',
                 subTaskFunction: idMatch ? idMatch[2] || '' : '',
             },
+            rev: new Date()
         }
         result.push(subtask)
     })
@@ -114,9 +124,10 @@ function extractTask(el: Element): Task {
     return task;
 }
 
-export class ReaderMP {
+export class ReaderMP implements IToCSV {
     protected docPath: string
     protected xmlPath: string
+    protected data?: Task[]
 
     constructor(docPath: string, readonly target: string = path.resolve('./')) {
         this.docPath = docPath
@@ -132,7 +143,8 @@ export class ReaderMP {
     }
 
     read() {
-        return this.mpReader()
+        this.data = this.mpReader()
+        return this.data;
     }
 
     // read PDF/SGML/XML
@@ -166,6 +178,76 @@ export class ReaderMP {
         })
         console.log(`Loaded ${result.length} Task items.`)
         return result
+    }
+
+    toCSV(): string {
+        const table: MPTask[] = []
+        if (!this.data) throw new Error('Exported not performed')
+        this.data.forEach(task => {
+            const taskRef: RefMP = task.ref as RefMP
+            const tableItem: MPTask = {
+                fleet: task.doc.model,
+                loaded: task.loaded,
+                operator: task.doc.op,
+                rev: task.rev,
+                title: task.header,
+                type: 'MPTASK',
+                modelIdentCode: taskRef.modelIdentCode,
+                systemDiffCode: taskRef.systemDiffCode,
+                systemCode: taskRef.systemCode,
+                subSystemCode: taskRef.subSystemCode,
+                subSubSystemCode: taskRef.subSubSystemCode,
+                assyCode: taskRef.assyCode,
+                disassyCode: taskRef.disassyCode,
+                disassyCodeVariant: taskRef.disassyCodeVariant,
+                infoCode: taskRef.infoCode,
+                infoCodeVariant: taskRef.infoCodeVariant,
+                itemLocationCode: taskRef.itemLocationCode,
+            }
+            table.push(tableItem)
+            task.subTask.forEach(subTask => {
+                const subTaskRef: SubTaskRefMP = subTask.ref as SubTaskRefMP
+                const tableSubItem: MPTask = {
+                    ...tableItem,
+                    systemComplete: subTaskRef.systemComplete,
+                    subTaskFunction: subTaskRef.subTaskFunction,
+                    title: subTask.header,
+                    rev: subTask.rev,
+                    type: 'MPSUBTASK'
+                }
+                table.push(tableSubItem)
+            })
+        })
+
+        return stringify(table, {
+            header: true, delimiter: ',', columns: [
+                'fleet',
+                'operator',
+                'rev',
+                'type',
+                'modelIdentCode',
+                'systemDiffCode',
+                'systemCode',
+                'subSystemCode',
+                'subSubSystemCode',
+                'assyCode',
+                'disassyCode',
+                'disassyCodeVariant',
+                'infoCode',
+                'infoCodeVariant',
+                'itemLocationCode',
+                'systemComplete',
+                'subTaskFunction',
+                'title',
+                'loaded',
+            ],
+            cast: {
+                date: (value: Date) => value.toISOString()
+            },
+            quote: true,
+            quoted: true,
+            encoding: "utf8"
+        });
     }
 }
 

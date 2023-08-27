@@ -1,6 +1,6 @@
 import path from "path";
 import * as fs from "fs";
-import type {SubTask, Task} from "@src/core/data/Task";
+import type {RefAMM, SubTask, Task} from "@src/core/data/Task";
 import {ReaderXML} from "@src/readers/ReaderXML";
 import type {Element} from "domhandler";
 import {globalNowZ} from "@src/core/utils/date";
@@ -8,6 +8,9 @@ import {convertRevDate} from "@src/core/convert/ConvertRevDate";
 import {extractText, findElement, findFirstElement, getAttribute} from "@src/core/utils/dom";
 import {extractEffectivity} from "@src/core/extracts/ExtractEffectivity";
 import * as console from "console";
+import type {IToCSV} from "@src/readers/IToCSV";
+import type {AMMTask} from "@src/core/data/Tables/AMMTask";
+import {stringify} from "csv-stringify/sync"
 
 function extractTitle(el: Element) {
     const titleNode = findFirstElement({tagName: 'title', nodes: el.children})
@@ -69,7 +72,9 @@ function extractSubTasks(el: Element): SubTask[] {
 
 function extractTask(el: Element): Task {
     const operator = getAttribute({attName: 'cus', elem: el}, '???')
-    const fleet = getAttribute({attName: 'model', elem: el}, 'A000').match(/A\d{3}/i)![0] || 'A000'
+    const model = getAttribute({attName: 'model', elem: el}, 'A000')
+    const fleetMatch = model.match(/A\d{3}/i)
+    const fleet = fleetMatch ? fleetMatch[0] || 'A000' : model == 'TF-N' ? 'A320' : model
     el = findFirstElement({tagName: 'task', nodes: el.children}) as Element
     const task: Task = {
         ref: {
@@ -103,9 +108,10 @@ function extractTask(el: Element): Task {
     return task;
 }
 
-export class ReaderAMM {
+export class ReaderAMM implements IToCSV {
     protected docPath: string
     protected xmlPath: string
+    protected data?: Task[]
 
     constructor(docPath: string, readonly target: string = path.resolve('./')) {
         this.docPath = docPath
@@ -121,7 +127,8 @@ export class ReaderAMM {
     }
 
     read() {
-        return this.ammReader()
+        this.data = this.ammReader()
+        return this.data
     }
 
     // read PDF/SGML/XML
@@ -147,6 +154,82 @@ export class ReaderAMM {
         })
         console.log(`Loaded ${result.length} Task items.`)
         return result
+    }
+
+    toCSV(): string {
+        const table: AMMTask[] = []
+        if (!this.data) throw new Error('Exported not performed')
+        this.data.forEach(task => {
+            const taskRef: RefAMM = task.ref as RefAMM
+            const tableItem: AMMTask = {
+                chap: taskRef.chap,
+                conf: taskRef.conf,
+                fleet: task.doc.model,
+                func: taskRef.func,
+                loaded: task.loaded,
+                meth: taskRef.meth,
+                operator: task.doc.op,
+                pgblk: taskRef.pgblk,
+                rev: task.rev,
+                sect: taskRef.sect,
+                seq: taskRef.seq,
+                subj: taskRef.subj,
+                title: task.header,
+                type: 'AMMTASK'
+            }
+            table.push(tableItem)
+            task.subTask.forEach(subTask => {
+                const subTaskRef: RefAMM = subTask.ref as RefAMM
+                const tableSubItem: AMMTask = {
+                    ...tableItem,
+                    sub_chap: subTaskRef.chap,
+                    sub_sect: subTaskRef.sect,
+                    sub_subj: subTaskRef.subj,
+                    sub_func: subTaskRef.func,
+                    sub_seq: subTaskRef.seq,
+                    sub_pgblk: subTaskRef.pgblk,
+                    sub_conf: subTaskRef.conf,
+                    sub_meth: subTaskRef.meth,
+                    title: subTask.header,
+                    rev: subTask.rev,
+                    type: 'AMMSUBTASK'
+                }
+                table.push(tableSubItem)
+            })
+        })
+
+        return stringify(table, {
+            header: true, delimiter: ',', columns: [
+                'fleet',
+                'operator',
+                'rev',
+                'type',
+                'chap',
+                'sect',
+                'subj',
+                'func',
+                'seq',
+                'pgblk',
+                'conf',
+                'meth',
+                'sub_chap',
+                'sub_sect',
+                'sub_subj',
+                'sub_func',
+                'sub_seq',
+                'sub_pgblk',
+                'sub_conf',
+                'sub_meth',
+                'title',
+                'loaded',
+            ],
+            cast: {
+                date: (value) => value.toISOString()
+            },
+            quote: true,
+            quoted: true,
+            encoding: "utf8"
+        });
     }
 }
 
