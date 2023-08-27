@@ -1,24 +1,24 @@
-interface AMMTask {
+export interface AMMTask {
     fleet: string
     operator: string
     rev: Date
-    type: 'TASK' | 'SUBTASK'
+    type: 'AMMTASK' | 'AMMSUBTASK'
     chap: string
     sect: string
     subj: string
     func: string
     seq: string
     pgblk: string
-    conf?: string
-    meth?: string
-    sub_chap?: string
-    sub_sect?: string
-    sub_subj?: string
-    sub_func?: string
-    sub_seq?: string
-    sub_pgblk?: string
-    sub_conf?: string
-    sub_meth?: string
+    conf?: string | undefined
+    meth?: string | undefined
+    sub_chap?: string | undefined
+    sub_sect?: string | undefined
+    sub_subj?: string | undefined
+    sub_func?: string | undefined
+    sub_seq?: string | undefined
+    sub_pgblk?: string | undefined
+    sub_conf?: string | undefined
+    sub_meth?: string | undefined
     title: string
     loaded: Date
 }

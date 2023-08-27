@@ -1,8 +1,8 @@
-interface MPTask {
+export interface MPTask {
     fleet: string
     operator: string
     rev: Date
-    type: 'TASK' | 'SUBTASK'
+    type: 'MPTASK' | 'MPSUBTASK'
     modelIdentCode: string
     systemDiffCode:string
     systemCode:string
